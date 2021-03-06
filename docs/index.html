@@ -154,17 +154,20 @@
                     let url = node_info[2];
                     let second_part = "";
                     if (i === path.length - 1) {
-                        // don't do anything for the last part
+                        // the last part
+                        if (kind === "team") {
+                            second_part = ` in <b>${year}</b>`
+                        }
                     } else if (kind === "rider") {
                         if (i !== 0) {
                             second_part = " who";
                         }
                         second_part += " rode for";
                     } else if (kind === "team") {
-                        let bonus_bit = i ? "" : " rode";
-                        second_part = ` in <b>${year}</b>${bonus_bit} with`;
+                        let bonus_bit = i ? " with" : " was the team of";
+                        second_part = ` in <b>${year}</b>${bonus_bit}`;
                     }
-                    output.innerHTML += `<p><a href="https://www.procyclingstats.com/${kind}/${url}">${nodename}</a>${second_part}</p>`
+                    output.innerHTML += `<p><a href="https://www.procyclingstats.com/${kind}/${url}">${nodename}</a>${second_part}</p> `
                 }
                 const endtime = +new Date()
 
