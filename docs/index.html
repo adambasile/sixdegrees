@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test</title>
+</head>
+<body>
+<p>
+    <label for="from">From: </label><input list="riders/teams" id="from" name="rider/team A", size="50"/>
+    <label for="to">To: </label><input list="riders/teams" id="to" name="rider/team A", size="50"/>
+    <input id="start" type="button" value="loading...">
+</p>
+<p id="output"></p>
+<datalist id="riders/teams"></datalist>
+</body>
+<script src='./sql-wasm.js'></script>
+<script>
+    const button = document.getElementById("start")
+
+    config = {
+        locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.4.0/dist/${filename}`
+    }
+    // The `initSqlJs` function is globally provided by all of the main dist files if loaded in the browser.
+    // We must specify this locateFile function if we are loading a wasm file from anywhere other than the current html page's folder.
+    initSqlJs(config).then(function (SQL) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', './graph.sqlite', true);
+        xhr.responseType = 'arraybuffer';
+
+        xhr.onload = e => {
+            var uInt8Array = new Uint8Array(xhr.response);
+            var db = new SQL.Database(uInt8Array);
+            var contents = db.exec("SELECT name, url FROM sport_ents ORDER BY name;")[0]["values"];
+            var options = '';
+            for (var i = 0; i < contents.length; i++) {
+                let val = `${contents[i][0]} (${contents[i][1]})`
+                options += `<option value="${val}" />`;
+            }
+            document.getElementById('riders/teams').innerHTML = options;
+            button.addEventListener('click', calculate)
+            button.value = "calculate!"
+        };
+        xhr.send();
+    });
+
+    const from = document.getElementById("from")
+    const to = document.getElementById("to")
+    const output = document.getElementById("output")
+
+    const re = /(.+) \((.+)\)$/
+
+    function calculate() {
+        const starttime = +new Date().valueOf()
+        const from_vals = from.value.match(re).slice(1);
+        const to_vals = to.value.match(re).slice(1);
+
+        const from_name = from_vals[0]
+        const from_url = from_vals[1]
+
+        const to_name = to_vals[0]
+        const to_url = to_vals[1]
+
+        output.innerHTML = `<p>Calculating path from ${from_name} to ${to_name}...</p>`
+        initSqlJs(config).then(function (SQL) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', './graph.sqlite', true);
+            xhr.responseType = 'arraybuffer';
+            xhr.onload = e => {
+                var uInt8Array = new Uint8Array(xhr.response);
+                var db = new SQL.Database(uInt8Array);
+                var ids = db.exec(`SELECT id FROM sport_ents where url='${from_url}';SELECT id FROM sport_ents where url='${to_url}';`);
+                console.log(to_url)
+                console.log(ids)
+                var from_id = ids[0]["values"].flat()[0]
+                var to_id = ids[1]["values"].flat()[0]
+                var path = find_path(db, from_id, to_id)
+                output.innerHTML = `<p>Calculated path from ${from_name} to ${to_name}!</p>`;
+
+                function get_info(ent_id) {
+                    return db.exec(`SELECT name, year FROM sport_ents where id=${ent_id};`)[0]["values"].flat()
+                }
+
+                for (let i = 0; i < path.length; i++) {
+                    output.innerHTML += `<p>${get_info(path[i])}</p>`
+                }
+                const endtime = +new Date()
+
+                output.innerHTML += `<p>Calculated in ${(endtime - starttime) / 1000} seconds</p>`
+            };
+            xhr.send();
+        });
+    }
+
+
+    function find_path(db, from_id, to_id) {
+        // bfs which is equivalent to dijkstra where cost == 1 for all edges
+        const previous = new Map()
+        previous.set(from_id, null)
+        let just_visited = new Set()
+        just_visited.add(from_id)
+
+        while (just_visited.size > 0) {
+            let visiting = new Set()
+            for (let from_node of just_visited) {
+                let to_nodes = db.exec(`SELECT b FROM graph where a=${from_node} order by randomblob(2);`)[0]["values"].flat()
+                for (let i = 0; i < to_nodes.length; i++) {
+                    let to_node = to_nodes[i];
+                    if (!previous.has(to_node)) {
+                        visiting.add(to_node)
+                        previous.set(to_node, from_node)
+                    }
+
+                    if (to_node === to_id) {
+                        let prev = previous.get(to_id)
+                        const path = [to_id]
+                        while (prev != null) {
+                            path.push(prev)
+                            prev = previous.get(prev)
+                        }
+                        return path.reverse()
+
+                    }
+
+                }
+            }
+            just_visited = visiting
+        }
+    }
+</script>
+
+
+</html>
