@@ -24,18 +24,11 @@
             text-decoration: underline
         }
 
-        .for-centring {
-            width: 1px;
-            margin: auto;
-            overflow: visible
-        }
-
         .main {
             width: 500px;
             background-color: white;
             padding: 0.5em 2em;
-            margin-left: -350px;
-            margin-right: 350px
+            margin: auto;
         }
 
         .inputs {
@@ -66,20 +59,18 @@
     </style>
 </head>
 <body>
-<div class="for-centring">
-    <div class="main">
-        <h1>Six Degrees of Laurent Fignon</h1>
-        <p>Find the degree of separation between any two pro cyclists or teams.</p>
-        <p class="inputs"><label for="from">From: </label><input list="riders/teams" id="from" name="rider/team A"/></p>
-        <p class="inputs"><label for="to">To: </label><input list="riders/teams" id="to" name="rider/team A"/></p>
-        <p><input id="start" type="button" value="loading..."></p>
-        <p id="output"></p>
-        <p class="mumblies">
-            based on <a href="https://www.procyclingstats.com">ProCyclingStats</a> as of 26 February
-            2021. Inspired by lighted_is_lit's
-            <a href="https://old.reddit.com/r/peloton/comments/lpitdb/six_degrees_of_laurent_fignon/">post</a>.
-        </p>
-    </div>
+<div class="main">
+    <h1>Six Degrees of Laurent Fignon</h1>
+    <p>Find the degree of separation between any two pro cyclists or teams.</p>
+    <p class="inputs"><label for="from">From: </label><input list="riders/teams" id="from" name="rider/team A"/></p>
+    <p class="inputs"><label for="to">To: </label><input list="riders/teams" id="to" name="rider/team A"/></p>
+    <p><input id="start" type="button" value="loading..."></p>
+    <p id="output"></p>
+    <p class="mumblies">
+        based on <a href="https://www.procyclingstats.com">ProCyclingStats</a> as of 26 February
+        2021. Inspired by lighted_is_lit's
+        <a href="https://old.reddit.com/r/peloton/comments/lpitdb/six_degrees_of_laurent_fignon/">post</a>.
+    </p>
 </div>
 <datalist id="riders/teams"></datalist>
 </body>
