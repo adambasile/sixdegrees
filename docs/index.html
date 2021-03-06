@@ -3,19 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <title>Six Degrees of Laurent Fignon</title>
+
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: lightgrey;
+        }
+
+        a:link {
+            color: inherit;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        a:visited {
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline
+        }
+
+        .for-centring {
+            width: 1px;
+            margin: auto;
+            overflow: visible
+        }
+
+        .main {
+            width: 500px;
+            background-color: white;
+            padding: 0.5em 2em;
+            margin-left: -350px;
+        }
+
+        .inputs {
+            display: flex
+        }
+
+        label {
+            padding-right: 0.25em;
+        }
+
+        input {
+            flex-grow: 1;
+        }
+
+        .degrees {
+            padding-top: 0.5em;
+            padding-bottom: 0.5em
+        }
+
+        .mumblies {
+            font-size: smaller;
+            padding-top: 0.25em;
+        }
+
+        .timing {
+            padding-top: 0.5em
+        }
+    </style>
 </head>
 <body>
-<p>
-    <label for="from">From: </label><input list="riders/teams" id="from" name="rider/team A", size="50"/>
-    <label for="to">To: </label><input list="riders/teams" id="to" name="rider/team A", size="50"/>
-    <input id="start" type="button" value="loading...">
-</p>
-<p id="output"></p>
+<div class="for-centring">
+    <div class="main">
+        <h1>Six Degrees of Laurent Fignon</h1>
+        <p>Find the degree of separation between any two pro cyclists or teams.</p>
+        <p class="inputs"><label for="from">From: </label><input list="riders/teams" id="from" name="rider/team A"/></p>
+        <p class="inputs"><label for="to">To: </label><input list="riders/teams" id="to" name="rider/team A"/></p>
+        <p><input id="start" type="button" value="loading..."></p>
+        <p id="output"></p>
+        <p class="mumblies">
+            based on <a href="https://www.procyclingstats.com">ProCyclingStats</a> as of 26 February
+            2021. Inspired by lighted_is_lit's
+            <a href="https://old.reddit.com/r/peloton/comments/lpitdb/six_degrees_of_laurent_fignon/">post</a>.
+        </p>
+    </div>
+</div>
 <datalist id="riders/teams"></datalist>
 </body>
 <script src='./sql-wasm.js'></script>
 <script>
     const button = document.getElementById("start")
+    const from = document.getElementById("from")
+    const to = document.getElementById("to")
+    from.value = "Jacques Anquetil (jacques-anquetil)"
+    to.value = "Laurent Fignon (laurent-fignon)"
+
+    const input_to_vals = new Map()
 
     config = {
         locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.4.0/dist/${filename}`
@@ -34,25 +109,23 @@
             var options = '';
             for (var i = 0; i < contents.length; i++) {
                 let val = `${contents[i][0]} (${contents[i][1]})`
+                input_to_vals.set(val, contents[i])
                 options += `<option value="${val}" />`;
             }
             document.getElementById('riders/teams').innerHTML = options;
             button.addEventListener('click', calculate)
-            button.value = "calculate!"
+            button.value = "Find path"
         };
         xhr.send();
     });
 
-    const from = document.getElementById("from")
-    const to = document.getElementById("to")
     const output = document.getElementById("output")
 
-    const re = /(.+) \((.+)\)$/
 
     function calculate() {
         const starttime = +new Date().valueOf()
-        const from_vals = from.value.match(re).slice(1);
-        const to_vals = to.value.match(re).slice(1);
+        const from_vals = input_to_vals.get(from.value);
+        const to_vals = input_to_vals.get(to.value);
 
         const from_name = from_vals[0]
         const from_url = from_vals[1]
@@ -60,7 +133,7 @@
         const to_name = to_vals[0]
         const to_url = to_vals[1]
 
-        output.innerHTML = `<p>Calculating path from ${from_name} to ${to_name}...</p>`
+        output.innerHTML = `<p class="degrees">Calculating path from <b>${from_name}</b> to <b>${to_name}</b>...</p>`
         initSqlJs(config).then(function (SQL) {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', './graph.sqlite', true);
@@ -69,23 +142,38 @@
                 var uInt8Array = new Uint8Array(xhr.response);
                 var db = new SQL.Database(uInt8Array);
                 var ids = db.exec(`SELECT id FROM sport_ents where url='${from_url}';SELECT id FROM sport_ents where url='${to_url}';`);
-                console.log(to_url)
-                console.log(ids)
                 var from_id = ids[0]["values"].flat()[0]
                 var to_id = ids[1]["values"].flat()[0]
                 var path = find_path(db, from_id, to_id)
-                output.innerHTML = `<p>Calculated path from ${from_name} to ${to_name}!</p>`;
+                output.innerHTML = `<p class="degrees">${(path.length - 1) / 2} degrees separate <b>${from_name}</b> and <b>${to_name}</b></p>`;
 
                 function get_info(ent_id) {
-                    return db.exec(`SELECT name, year FROM sport_ents where id=${ent_id};`)[0]["values"].flat()
+                    return db.exec(`SELECT name, year, url FROM sport_ents where id=${ent_id};`)[0]["values"].flat()
                 }
 
                 for (let i = 0; i < path.length; i++) {
-                    output.innerHTML += `<p>${get_info(path[i])}</p>`
+                    let node_info = get_info(path[i]);
+                    let nodename = node_info[0];
+                    let year = node_info[1];
+                    let kind = year ? "team" : "rider";
+                    let url = node_info[2];
+                    let second_part = "";
+                    if (i === path.length - 1) {
+                        // don't do anything for the last part
+                    } else if (kind === "rider") {
+                        if (i !== 0) {
+                            second_part = " who";
+                        }
+                        second_part += " rode for";
+                    } else if (kind === "team") {
+                        let bonus_bit = i ? "" : " rode";
+                        second_part = ` in <b>${year}</b>${bonus_bit} with`;
+                    }
+                    output.innerHTML += `<p><a href="https://www.procyclingstats.com/${kind}/${url}">${nodename}</a>${second_part}</p>`
                 }
                 const endtime = +new Date()
 
-                output.innerHTML += `<p>Calculated in ${(endtime - starttime) / 1000} seconds</p>`
+                output.innerHTML += `<p class="timing">Calculated in ${(endtime - starttime) / 1000} seconds</p>`
             };
             xhr.send();
         });
