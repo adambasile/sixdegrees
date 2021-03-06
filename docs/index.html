@@ -6,7 +6,6 @@
 
     <style>
         body {
-            width: 520px;
             font-family: sans-serif;
             background-color: lightgrey;
             margin: auto;
@@ -27,10 +26,16 @@
         }
 
         .main {
-            width: 500px;
+            max-width: 33em;
             background-color: white;
             padding: 0.1em 2em 0.5em;
             margin: 1em auto auto;
+        }
+
+        @media screen and ( max-width: 38em ) {
+            .main {
+                margin: 1em 0.5em auto;
+            }
         }
 
         .inputs {
