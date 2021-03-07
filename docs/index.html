@@ -112,6 +112,8 @@
 
     const input_to_vals = new Map()
 
+    let db; // graph.sqlite
+
     config = {
         locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.4.0/dist/${filename}`
     }
@@ -123,8 +125,8 @@
         xhr.responseType = 'arraybuffer';
 
         xhr.onload = e => {
-            var uInt8Array = new Uint8Array(xhr.response);
-            var db = new SQL.Database(uInt8Array);
+            let uInt8Array = new Uint8Array(xhr.response);
+            db = new SQL.Database(uInt8Array);
             var contents = db.exec("SELECT name, url, id+1 FROM sport_ents ORDER BY name;")[0]["values"];
             var options = [];
             for (var i = 0; i < contents.length; i++) {
@@ -168,52 +170,42 @@
         const to_url = to_vals[1]
 
         output.innerHTML = `<p class="degrees">Calculating path from <b>${from_name}</b> to <b>${to_name}</b>...</p>`
-        initSqlJs(config).then(function (SQL) {
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', './graph.sqlite', true);
-            xhr.responseType = 'arraybuffer';
-            xhr.onload = e => {
-                var uInt8Array = new Uint8Array(xhr.response);
-                var db = new SQL.Database(uInt8Array);
-                var ids = db.exec(`SELECT id FROM sport_ents where url='${from_url}';SELECT id FROM sport_ents where url='${to_url}';`);
-                var from_id = ids[0]["values"].flat()[0]
-                var to_id = ids[1]["values"].flat()[0]
-                var path = find_path(db, from_id, to_id)
-                output.innerHTML = `<p class="degrees">${(path.length - 1) / 2} degrees separate <b>${from_name}</b> and <b>${to_name}</b></p>`;
+        var ids = db.exec(`SELECT id FROM sport_ents where url='${from_url}';SELECT id FROM sport_ents where url='${to_url}';`);
+        var from_id = ids[0]["values"].flat()[0]
+        var to_id = ids[1]["values"].flat()[0]
+        var path = find_path(db, from_id, to_id)
+        output.innerHTML = `<p class="degrees">${(path.length - 1) / 2} degrees separate <b>${from_name}</b> and <b>${to_name}</b></p>`;
 
-                function get_info(ent_id) {
-                    return db.exec(`SELECT name, year, url FROM sport_ents where id=${ent_id};`)[0]["values"].flat()
+        function get_info(ent_id) {
+            return db.exec(`SELECT name, year, url FROM sport_ents where id=${ent_id};`)[0]["values"].flat()
+        }
+
+        for (let i = 0; i < path.length; i++) {
+            let node_info = get_info(path[i]);
+            let nodename = node_info[0];
+            let year = node_info[1];
+            let kind = year ? "team" : "rider";
+            let url = node_info[2];
+            let second_part = "";
+            if (i === path.length - 1) {
+                // the last part
+                if (kind === "team") {
+                    second_part = ` in <b>${year}</b>`
                 }
-
-                for (let i = 0; i < path.length; i++) {
-                    let node_info = get_info(path[i]);
-                    let nodename = node_info[0];
-                    let year = node_info[1];
-                    let kind = year ? "team" : "rider";
-                    let url = node_info[2];
-                    let second_part = "";
-                    if (i === path.length - 1) {
-                        // the last part
-                        if (kind === "team") {
-                            second_part = ` in <b>${year}</b>`
-                        }
-                    } else if (kind === "rider") {
-                        if (i !== 0) {
-                            second_part = " who";
-                        }
-                        second_part += " rode for";
-                    } else if (kind === "team") {
-                        let bonus_bit = i ? " with" : " was the team of";
-                        second_part = ` in <b>${year}</b>${bonus_bit}`;
-                    }
-                    output.innerHTML += `<p><a href="https://www.procyclingstats.com/${kind}/${url}">${nodename}</a>${second_part}</p> `
+            } else if (kind === "rider") {
+                if (i !== 0) {
+                    second_part = " who";
                 }
-                const endtime = +new Date()
+                second_part += " rode for";
+            } else if (kind === "team") {
+                let bonus_bit = i ? " with" : " was the team of";
+                second_part = ` in <b>${year}</b>${bonus_bit}`;
+            }
+            output.innerHTML += `<p><a href="https://www.procyclingstats.com/${kind}/${url}">${nodename}</a>${second_part}</p> `
+        }
 
-                output.innerHTML += `<p class="timing">Calculated in ${(endtime - starttime) / 1000} seconds</p>`
-            };
-            xhr.send();
-        });
+        const endtime = +new Date()
+        output.innerHTML += `<p class="timing">Calculated in ${(endtime - starttime) / 1000} seconds</p>`;
     }
 
 
