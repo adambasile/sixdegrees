@@ -101,7 +101,7 @@
     $(function () {
         $('select').selectize({
             placeholder: "loading...",
-            plugins: ['restore_on_backspace']
+            openOnFocus: false,
         });
     });
 </script>
@@ -143,8 +143,8 @@
                 selectize_to.clearOptions();
                 selectize_from.addOption(options);
                 selectize_to.addOption(options);
-                selectize_from.settings.placeholder = "Select rider/team";
-                selectize_to.settings.placeholder = "Select rider/team";
+                selectize_from.settings.placeholder = "Type to select rider/team";
+                selectize_to.settings.placeholder = "Type to select rider/team";
                 selectize_from.setValue(anque_id, 1);
                 selectize_to.setValue(fig_id, 1);
             });
