@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns="http://www.w3.org/1999/html">
 <head>
     <meta charset="UTF-8">
     <title>Six Degrees of Laurent Fignon</title>
@@ -39,14 +39,16 @@
         }
 
         .inputs {
-            display: flex
+            display: flex;
+            align-items: center;
         }
 
         label {
             padding-right: 0.25em;
+            padding-bottom: 0.3em;
         }
 
-        input {
+        .selectize-control {
             flex-grow: 1;
         }
 
@@ -69,9 +71,21 @@
 <div class="main">
     <h1><a href="">Six Degrees of Laurent Fignon</a></h1>
     <p>Find the degree of separation between any two pro cyclists or teams.</p>
-    <p class="inputs"><label for="from">From: </label><input list="riders/teams" id="from" name="rider/team A"/></p>
-    <p class="inputs"><label for="to">To: </label><input list="riders/teams" id="to" name="rider/team A"/></p>
-    <p><input id="start" type="button" value="loading..."></p>
+    <form>
+        <p class="inputs">
+            <label for="from">From: </label>
+            <select id="from" name="rider/team A">
+                <option></option>
+            </select>
+        </p>
+        <p class="inputs">
+            <label for="to">To: </label>
+            <select id="to" name="rider/team A">
+                <option></option>
+            </select>
+        </p>
+        <p><input id="start" type="button" value="loading..."></p>
+    </form>
     <p id="output"></p>
     <p class="mumblies">
         Based on <a href="https://www.procyclingstats.com">ProCyclingStats</a> as of 26 February
@@ -83,12 +97,18 @@
 <datalist id="riders/teams"></datalist>
 </body>
 <script src='./sql-wasm.js'></script>
+<script src="./jquery-3.6.0.min.js"></script>
+<script src="./selectize.js"></script>
+<link rel="stylesheet" type="text/css" href="selectize.default.css"/>
+<script>
+    $(function () {
+        $('select').selectize();
+    });
+</script>
 <script>
     const button = document.getElementById("start")
     const from = document.getElementById("from")
     const to = document.getElementById("to")
-    from.value = "Jacques Anquetil (jacques-anquetil)"
-    to.value = "Laurent Fignon (laurent-fignon)"
 
     const input_to_vals = new Map()
 
@@ -105,13 +125,25 @@
         xhr.onload = e => {
             var uInt8Array = new Uint8Array(xhr.response);
             var db = new SQL.Database(uInt8Array);
-            var contents = db.exec("SELECT name, url FROM sport_ents ORDER BY name;")[0]["values"];
-            var options = '';
+            var contents = db.exec("SELECT name, url, id+1 FROM sport_ents ORDER BY name;")[0]["values"];
+            var options = [];
             for (var i = 0; i < contents.length; i++) {
-                let val = `${contents[i][0]} (${contents[i][1]})`
-                input_to_vals.set(val, contents[i])
-                options += `<option value="${val}" />`;
+                options.push({text: `${contents[i][0]} (${contents[i][1]})`, value: contents[i][2]})
+                input_to_vals.set(contents[i][2], [contents[i][0], contents[i][1]])
             }
+            var anque_id = db.exec("SELECT id+1 FROM sport_ents where url='jacques-anquetil';")[0]["values"].flat()[0]
+            var fig_id = db.exec("SELECT id+1 FROM sport_ents where url='laurent-fignon';")[0]["values"].flat()[0]
+            $(function () {
+                let selectize_from = $('select')[0].selectize
+                let selectize_to = $('select')[1].selectize
+                selectize_from.clearOptions()
+                selectize_to.clearOptions()
+                selectize_from.addOption(options);
+                selectize_to.addOption(options);
+                selectize_from.setValue(anque_id, 1);
+                selectize_to.setValue(fig_id, 1);
+            });
+
             document.getElementById('riders/teams').innerHTML = options;
             button.addEventListener('click', calculate)
             button.value = "Find path"
@@ -124,8 +156,10 @@
 
     function calculate() {
         const starttime = +new Date().valueOf()
-        const from_vals = input_to_vals.get(from.value);
-        const to_vals = input_to_vals.get(to.value);
+        console.log([from.value, to.value])
+        console.log(to)
+        const from_vals = input_to_vals.get(Number(from.value));
+        const to_vals = input_to_vals.get(Number(to.value));
 
         const from_name = from_vals[0]
         const from_url = from_vals[1]
