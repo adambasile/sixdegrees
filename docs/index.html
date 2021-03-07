@@ -29,7 +29,7 @@
             max-width: 33em;
             background-color: white;
             padding: 0.1em 2em 0.5em;
-            margin: 1em auto auto;
+            margin: 1em auto;
         }
 
         @media screen and ( max-width: 38em ) {
@@ -94,7 +94,6 @@
         Contact: sixdegreesoflaurentfignon (at) gmail.com
     </p>
 </div>
-<datalist id="riders/teams"></datalist>
 </body>
 <script src='./sql-wasm.js'></script>
 <script src="./jquery-3.6.0.min.js"></script>
@@ -102,7 +101,10 @@
 <link rel="stylesheet" type="text/css" href="selectize.default.css"/>
 <script>
     $(function () {
-        $('select').selectize();
+        $('select').selectize({
+            placeholder: "loading...",
+            plugins: ['restore_on_backspace']
+        });
     });
 </script>
 <script>
@@ -136,20 +138,27 @@
             var anque_id = db.exec("SELECT id+1 FROM sport_ents where url='jacques-anquetil';")[0]["values"].flat()[0]
             var fig_id = db.exec("SELECT id+1 FROM sport_ents where url='laurent-fignon';")[0]["values"].flat()[0]
             $(function () {
-                let selectize_from = $('select')[0].selectize
-                let selectize_to = $('select')[1].selectize
+                const $select = $('select');
+                let selectize_from = $select[0].selectize
+                let selectize_to = $select[1].selectize
                 selectize_from.clearOptions()
                 selectize_to.clearOptions()
                 selectize_from.addOption(options);
                 selectize_to.addOption(options);
+                selectize_from.settings.placeholder = "Select rider/team";
+                selectize_to.settings.placeholder = "Select rider/team";
                 selectize_from.setValue(anque_id, 1);
                 selectize_to.setValue(fig_id, 1);
             });
 
-            document.getElementById('riders/teams').innerHTML = options;
             button.addEventListener('click', calculate)
             button.value = "Find path"
         };
+        xhr.onprogress = function (event) {
+            let percent_loaded = 100 * (event.loaded / event.total)
+            button.value = `Riders/teams ${percent_loaded.toFixed()}% downloaded...`
+        };
+
         xhr.send();
     });
 
@@ -158,8 +167,6 @@
 
     function calculate() {
         const starttime = +new Date().valueOf()
-        console.log([from.value, to.value])
-        console.log(to)
         const from_vals = input_to_vals.get(Number(from.value));
         const to_vals = input_to_vals.get(Number(to.value));
 
