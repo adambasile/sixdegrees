@@ -95,7 +95,7 @@
 <script src='./sql-wasm.js'></script>
 <script src="./jquery-3.6.0.min.js"></script>
 <script src="./selectize.js"></script>
-<link rel="stylesheet" type="text/css" href="selectize.default.css"/>
+<link rel="stylesheet" type="text/css" href="./selectize.default.css"/>
 <script>
     $(function () {
         $('select').selectize({
@@ -113,12 +113,9 @@
 
     let db; // graph.sqlite
 
-    config = {
-        locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.4.0/dist/${filename}`
-    }
     // The `initSqlJs` function is globally provided by all of the main dist files if loaded in the browser.
     // We must specify this locateFile function if we are loading a wasm file from anywhere other than the current html page's folder.
-    initSqlJs(config).then(function (SQL) {
+    initSqlJs({locateFile: filename => `./${filename}`}).then(function (SQL) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', './graph.sqlite', true);
         xhr.responseType = 'arraybuffer';
