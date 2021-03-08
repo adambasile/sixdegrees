@@ -109,8 +109,6 @@
     const from = document.getElementById("from")
     const to = document.getElementById("to")
 
-    const input_to_vals = new Map()
-
     let db; // graph.sqlite
 
     // The `initSqlJs` function is globally provided by all of the main dist files if loaded in the browser.
@@ -127,7 +125,6 @@
             var options = [];
             for (var i = 0; i < contents.length; i++) {
                 options.push({text: `${contents[i][0]} (${contents[i][1]})`, value: contents[i][2]});
-                input_to_vals.set(contents[i][2], [contents[i][0], contents[i][1]]);
             }
             var anque_id = db.exec("SELECT id FROM sport_ents where url='jacques-anquetil';")[0]["values"].flat()[0];
             var fig_id = db.exec("SELECT id FROM sport_ents where url='laurent-fignon';")[0]["values"].flat()[0];
@@ -143,6 +140,7 @@
                 selectize_to.settings.placeholder = "Type to select rider/team";
                 selectize_from.setValue(anque_id, 1);
                 selectize_to.setValue(fig_id, 1);
+                console.log(selectize_to)
             });
 
             button.addEventListener('click', calculate)
@@ -166,31 +164,29 @@
     }
 
     async function populate_results() {
-        const from_vals = input_to_vals.get(Number(from.value));
-        const to_vals = input_to_vals.get(Number(to.value));
+        const from_id = Number(from.value);
+        const to_id = Number(to.value);
+
+        const from_name_temp = db.exec(`SELECT name FROM sport_ents where id='${from_id}';`);
+        const to_name_temp = db.exec(`SELECT name FROM sport_ents where id='${to_id}';`);
 
         // check if there's malformed input
-        if (!from_vals) {
+        if (from_name_temp.length === 0) {
             $("#from-selectized").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)
         }
-        if (!to_vals) {
+        if (to_name_temp.length === 0) {
             $("#to-selectized").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)
         }
         // will fail silently in the next few lines if there is
 
-        const from_name = from_vals[0];
-        const from_url = from_vals[1];
-
-        const to_name = to_vals[0];
-        const to_url = to_vals[1];
+        const from_name = from_name_temp[0]["values"].flat()[0];
+        const to_name = to_name_temp[0]["values"].flat()[0];
 
         output.innerHTML = `<p class="degrees">Calculating path from <b>${from_name}</b> to <b>${to_name}</b>...</p>`;
         await new Promise(r => setTimeout(r, 50)); // so it actually renders the bloody "calculating" message
 
-        var ids = db.exec(`SELECT id FROM sport_ents where url='${from_url}';SELECT id FROM sport_ents where url='${to_url}';`);
-        var from_id = ids[0]["values"].flat()[0];
-        var to_id = ids[1]["values"].flat()[0];
         var path = find_path(db, from_id, to_id);
+
         if (path.length === 0) {
             output.innerHTML = `<p class="degrees">No path found between <b>${from_name}</b> and <b>${to_name}</b></p>`;
             return
