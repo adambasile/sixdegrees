@@ -118,7 +118,6 @@
     const button = document.getElementById("start")
     const from = document.getElementById("from")
     const to = document.getElementById("to")
-
     let db; // graph.sqlite
 
     // The `initSqlJs` function is globally provided by all of the main dist files if loaded in the browser.
@@ -252,7 +251,6 @@
                     if (!previous.has(to_node)) {
                         visiting.add(to_node);
                         previous.set(to_node, from_node);
-
                         if (to_node === to_id) {
                             let prev = previous.get(to_id)
                             const path = [to_id]
@@ -263,7 +261,6 @@
                             return path.reverse()
                         }
                     }
-
                 }
             }
             just_visited = visiting
