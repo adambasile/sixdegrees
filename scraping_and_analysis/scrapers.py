@@ -3,12 +3,13 @@ import requests
 
 import pandas as pd
 
-ranking_page = "https://www.procyclingstats.com/rankings.php?date={}-12-31&nation=&age=&zage=&page=smallerorequal&team=&offset={}&filter=Filter&p=me&s=season-individual"
+ranking_page = "https://www.procyclingstats.com/rankings.php?date={}-12-31&nation=&age=&zage=&page=smallerorequal&team=&offset={}&filter=Filter&p={}e&s=season-individual"
 
 
 def scrape_top(args):
-    year, offset = args
-    with requests.get(ranking_page.format(year, offset)) as fp:
+    year, offset, mens = args
+    gender = "m" if mens else "w"
+    with requests.get(ranking_page.format(year, offset, gender)) as fp:
         soup = BeautifulSoup(fp.text, "html.parser")
     top_riders = [a["href"] for a in soup.find("table", **{"class": "basic"}).find_all("a")[::3]]
     return top_riders

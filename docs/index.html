@@ -86,8 +86,8 @@
     <p><input id="start" type="button" value="loading..."></p>
     <p id="output"></p>
     <p class="mumblies">
-        Based on <a href="https://www.procyclingstats.com">ProCyclingStats</a> as of 26 February
-        2021. Inspired by lighted_is_lit's
+        Based on <a href="https://www.procyclingstats.com">ProCyclingStats</a> as of 8 March 2021.
+        Inspired by lighted_is_lit's
         <a href="https://old.reddit.com/r/peloton/comments/lpitdb/six_degrees_of_laurent_fignon/">post</a>.
         Contact: sixdegreesoflaurentfignon (at) gmail.com
     </p>
@@ -127,14 +127,14 @@
         xhr.onload = e => {
             let uInt8Array = new Uint8Array(xhr.response);
             db = new SQL.Database(uInt8Array);
-            var contents = db.exec("SELECT name, url, id+1 FROM sport_ents ORDER BY name;")[0]["values"];
+            var contents = db.exec("SELECT name, url, id FROM sport_ents ORDER BY name;")[0]["values"];
             var options = [];
             for (var i = 0; i < contents.length; i++) {
                 options.push({text: `${contents[i][0]} (${contents[i][1]})`, value: contents[i][2]});
                 input_to_vals.set(contents[i][2], [contents[i][0], contents[i][1]]);
             }
-            var anque_id = db.exec("SELECT id+1 FROM sport_ents where url='jacques-anquetil';")[0]["values"].flat()[0];
-            var fig_id = db.exec("SELECT id+1 FROM sport_ents where url='laurent-fignon';")[0]["values"].flat()[0];
+            var anque_id = db.exec("SELECT id FROM sport_ents where url='jacques-anquetil';")[0]["values"].flat()[0];
+            var fig_id = db.exec("SELECT id FROM sport_ents where url='laurent-fignon';")[0]["values"].flat()[0];
             $(function () {
                 const $select = $('select');
                 let selectize_from = $select[0].selectize;
