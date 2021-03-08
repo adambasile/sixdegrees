@@ -181,7 +181,12 @@
         var from_id = ids[0]["values"].flat()[0];
         var to_id = ids[1]["values"].flat()[0];
         var path = find_path(db, from_id, to_id);
-        console.log(+new Date().valueOf() - starttime);
+        if (path.length === 0) {
+            output.innerHTML = `<p class="degrees">No path found between <b>${from_name}</b> and <b>${to_name}</b></p>`;
+            const endtime = +new Date()
+            output.innerHTML += `<p class="timing">Calculated in ${(endtime - starttime) / 1000} seconds</p>`;
+            return
+        }
         output.innerHTML = `<p class="degrees">${(path.length - 1) / 2} degrees separate <b>${from_name}</b> and <b>${to_name}</b></p>`;
 
         function get_info(ent_id) {
@@ -218,6 +223,9 @@
 
 
     function find_path(db, from_id, to_id) {
+        if (from_id === to_id) {
+            return [from_id]
+        }
         // bfs which is equivalent to dijkstra where cost == 1 for all edges
         const previous = new Map();
         previous.set(from_id, null);
@@ -233,23 +241,23 @@
                     if (!previous.has(to_node)) {
                         visiting.add(to_node);
                         previous.set(to_node, from_node);
-                    }
 
-                    if (to_node === to_id) {
-                        let prev = previous.get(to_id)
-                        const path = [to_id]
-                        while (prev != null) {
-                            path.push(prev);
-                            prev = previous.get(prev);
+                        if (to_node === to_id) {
+                            let prev = previous.get(to_id)
+                            const path = [to_id]
+                            while (prev != null) {
+                                path.push(prev);
+                                prev = previous.get(prev);
+                            }
+                            return path.reverse()
                         }
-                        return path.reverse()
-
                     }
 
                 }
             }
             just_visited = visiting
         }
+        return []
     }
 </script>
 </html>
