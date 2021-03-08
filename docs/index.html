@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Six Degrees of Laurent Fignon</title>
-
     <style>
         body {
             font-family: sans-serif;
@@ -163,10 +162,8 @@
     const output = document.getElementById("output");
 
     async function calculate() {
-        const starttime = +new Date().valueOf();
-
+        const starttime = +new Date();
         await populate_results();
-
         const endtime = +new Date()
         output.innerHTML += `<p class="timing">Calculated in ${(endtime - starttime) / 1000} seconds</p>`;
     }
@@ -174,6 +171,15 @@
     async function populate_results() {
         const from_vals = input_to_vals.get(Number(from.value));
         const to_vals = input_to_vals.get(Number(to.value));
+
+        // check if there's malformed input
+        if (!from_vals) {
+            $("#from-selectized").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)
+        }
+        if (!to_vals) {
+            $("#to-selectized").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)
+        }
+        // will fail silently in the next few lines if there is
 
         const from_name = from_vals[0];
         const from_url = from_vals[1];
