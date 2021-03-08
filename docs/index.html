@@ -162,9 +162,16 @@
 
     const output = document.getElementById("output");
 
-
     async function calculate() {
         const starttime = +new Date().valueOf();
+
+        await populate_results();
+
+        const endtime = +new Date()
+        output.innerHTML += `<p class="timing">Calculated in ${(endtime - starttime) / 1000} seconds</p>`;
+    }
+
+    async function populate_results() {
         const from_vals = input_to_vals.get(Number(from.value));
         const to_vals = input_to_vals.get(Number(to.value));
 
@@ -183,8 +190,6 @@
         var path = find_path(db, from_id, to_id);
         if (path.length === 0) {
             output.innerHTML = `<p class="degrees">No path found between <b>${from_name}</b> and <b>${to_name}</b></p>`;
-            const endtime = +new Date()
-            output.innerHTML += `<p class="timing">Calculated in ${(endtime - starttime) / 1000} seconds</p>`;
             return
         }
         output.innerHTML = `<p class="degrees">${(path.length - 1) / 2} degrees separate <b>${from_name}</b> and <b>${to_name}</b></p>`;
@@ -216,9 +221,6 @@
             }
             output.innerHTML += `<p><a href="https://www.procyclingstats.com/${kind}/${url}">${nodename}</a>${second_part} </p>`
         }
-
-        const endtime = +new Date()
-        output.innerHTML += `<p class="timing">Calculated in ${(endtime - starttime) / 1000} seconds</p>`;
     }
 
 
