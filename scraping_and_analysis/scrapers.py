@@ -3,42 +3,29 @@ import requests
 
 import pandas as pd
 
-ranking_page = "https://www.procyclingstats.com/rankings.php?date={}-12-31&nation=&age=&zage=&page=smallerorequal&team=&offset={}&filter=Filter&p={}e&s=season-individual"
+ranking_page = "https://firstcycling.com/ranking.php?k=fc&rank={}&y={}&page={}"
 
 
 def scrape_top(args):
-    year, offset, mens = args
-    gender = "m" if mens else "w"
-    with requests.get(ranking_page.format(year, offset, gender)) as fp:
+    year, page, mens = args
+    gender = "el" if mens else "wel"
+    with requests.get(ranking_page.format(gender, year, page)) as fp:
         soup = BeautifulSoup(fp.text, "html.parser")
-    top_riders = [a["href"] for a in soup.find("table", **{"class": "basic"}).find_all("a")[::3]]
-    return top_riders
+
+    return [int(tr.find("a")["href"].split("=")[1]) for tr in soup.find("tbody").find_all("tr")]
 
 
 def scrape_rider(rider):
     try:
-        with requests.get(f"https://www.procyclingstats.com/{rider}") as fp:
+        with requests.get(f"https://firstcycling.com/rider.php?r={rider}&teams=1") as fp:
             soup = BeautifulSoup(fp.text, "html.parser")
-
-        with requests.get(f"https://www.procyclingstats.com/{rider}/statistics/season-statistics") as fp:
-            pointsoup = BeautifulSoup(fp.text, "html.parser")
-
-        teams = pd.Series(
-            {
-                int(teamyear.find("div", **{"class": "season"}).text): teamyear.find("a")["href"]
-                for teamyear in soup.find("ul", **{"class": "rdr-teams"}).find_all("li")
-                if teamyear.find("div", **{"class": "season"}).text
-            }
-        )
-        teams = teams[teams.index < 2022]
-
-        points = pd.read_html(str(pointsoup.find("table")))[0].dropna().astype(int).set_index("Season")[["Points"]]
-
-        out = points.reindex(teams.index).fillna(0)
-        out["Teams"] = teams
-        out["Rider"] = rider
-        return list(out[["Rider", "Teams", "Points"]].itertuples(index=False, name=None))
-
+        tables = soup.find_all("table", **{"class": "tablesorter"})
+        if len(tables) == 1:
+            return []
+        return [
+            (rider, int(a["href"].split("=")[1]))
+            for a in tables[1].find_all("a")      
+        ]
     except Exception as e:
         import sys
 
@@ -47,15 +34,18 @@ def scrape_rider(rider):
 
 def scrape_team(team):
     try:
-        with requests.get(f"https://www.procyclingstats.com/{team}") as fp:
+        with requests.get(f"https://firstcycling.com/team.php?l={team}&riders=2") as fp:
             soup = BeautifulSoup(fp.text, "html.parser")
-        return [a["href"] for a in soup.find("ul", style=" ", **{"class": ("list", "pad2")}).find_all("a")]
+        return [
+            int(a["href"].split("=")[1])
+            for a in soup.find_all("table", **{"class": "tablesorter"})[0].find_all("a")[::2]
+        ]
     except Exception as e:
         import sys
 
         raise type(e)(f"Problem with '{team}'").with_traceback(sys.exc_info()[2])
-        
-        
+
+
 def get_pretty_rider(rider):
     with requests.get(f"https://www.procyclingstats.com/{rider}") as fp:
         soup = BeautifulSoup(fp.text, "html.parser")
