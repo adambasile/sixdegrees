@@ -95,7 +95,7 @@
     <p><input id="start" type="button" value="loading..."></p>
     <p id="output"></p>
     <p class="mumblies">
-        Based on <a href="https://www.procyclingstats.com">ProCyclingStats</a> as of 8 March 2021.
+        Based on <a href="https://firstcycling.com">FirstCycling</a> as of 16 March 2021.
         Inspired by lighted_is_lit's
         <a href="https://old.reddit.com/r/peloton/comments/lpitdb/six_degrees_of_laurent_fignon/">post</a>.
         Contact: sixdegreesoflaurentfignon (at) gmail.com
@@ -111,6 +111,12 @@
         $('select').selectize({
             placeholder: "loading...",
             openOnFocus: false,
+            sortField: [
+                {
+                    field: 'name',
+                    direction: 'asc'
+                },
+            ],
         });
     });
 </script>
@@ -130,13 +136,16 @@
         xhr.onload = e => {
             let uInt8Array = new Uint8Array(xhr.response);
             db = new SQL.Database(uInt8Array);
-            var contents = db.exec("SELECT name, url, id FROM sport_ents ORDER BY name;")[0]["values"];
+            var contents = db.exec("SELECT name, url, year FROM sport_ents ORDER BY name, year;")[0]["values"];
             var options = [];
             for (var i = 0; i < contents.length; i++) {
-                options.push({text: `${contents[i][0]} (${contents[i][1]})`, value: contents[i][2]});
+                let year = contents[i][2];
+                let year_bit = (year > 0) ? `, ${year}` : "";
+                options.push({
+                    text: `${contents[i][0]}${year_bit} (#${Math.abs(contents[i][1])})`,
+                    value: contents[i][1]
+                });
             }
-            var anque_id = db.exec("SELECT id FROM sport_ents where url='jacques-anquetil';")[0]["values"].flat()[0];
-            var fig_id = db.exec("SELECT id FROM sport_ents where url='laurent-fignon';")[0]["values"].flat()[0];
             $(function () {
                 const $select = $('select');
                 let selectize_from = $select[0].selectize;
@@ -147,8 +156,8 @@
                 selectize_to.addOption(options);
                 selectize_from.settings.placeholder = "Type to select rider/team";
                 selectize_to.settings.placeholder = "Type to select rider/team";
-                selectize_from.setValue(anque_id, 1);
-                selectize_to.setValue(fig_id, 1);
+                selectize_from.setValue(1496, 1); // jacques anquetil
+                selectize_to.setValue(1499, 1); // laurent fignon
                 console.log(selectize_to)
             });
 
@@ -176,8 +185,8 @@
         const from_id = Number(from.value);
         const to_id = Number(to.value);
 
-        const from_name_temp = db.exec(`SELECT name FROM sport_ents where id='${from_id}';`);
-        const to_name_temp = db.exec(`SELECT name FROM sport_ents where id='${to_id}';`);
+        const from_name_temp = db.exec(`SELECT name FROM sport_ents where url='${from_id}';`);
+        const to_name_temp = db.exec(`SELECT name FROM sport_ents where url='${to_id}';`);
 
         // check if there's malformed input
         if (from_name_temp.length === 0) {
@@ -203,7 +212,7 @@
         output.innerHTML = `<p class="degrees">${(path.length - 1) / 2} degrees separate <b>${from_name}</b> and <b>${to_name}</b></p>`;
 
         function get_info(ent_id) {
-            return db.exec(`SELECT name, year, url FROM sport_ents where id=${ent_id};`)[0]["values"].flat();
+            return db.exec(`SELECT name, year, url FROM sport_ents where url=${ent_id};`)[0]["values"].flat();
         }
 
         for (let i = 0; i < path.length; i++) {
@@ -227,7 +236,7 @@
                 let bonus_bit = i ? " with" : " was the team of";
                 second_part = ` in <b>${year}</b>${bonus_bit}`;
             }
-            output.innerHTML += `<p><a href="https://www.procyclingstats.com/${kind}/${url}">${nodename}</a>${second_part} </p>`
+            output.innerHTML += `<p><a href="https://firstcycling.com/${kind}.php?${kind == "team" ? "l" : "r"}=${Math.abs(url)}">${nodename}</a>${second_part} </p>`
         }
     }
 
