@@ -146,6 +146,9 @@
                     value: contents[i][1]
                 });
             }
+            const url = new URL(window.location);
+            const from_id = url.searchParams.get('from') || "";
+            const to_id = url.searchParams.get('to') || "";
             $(function () {
                 const $select = $('select');
                 let selectize_from = $select[0].selectize;
@@ -156,9 +159,10 @@
                 selectize_to.addOption(options);
                 selectize_from.settings.placeholder = "Type to select rider/team";
                 selectize_to.settings.placeholder = "Type to select rider/team";
-                selectize_from.setValue(1496, 1); // jacques anquetil
-                selectize_to.setValue(1499, 1); // laurent fignon
-                console.log(selectize_to)
+                selectize_from.setValue(from_id, 1); // jacques anquetil
+                selectize_to.setValue(to_id, 1); // laurent fignon
+                selectize_from.updatePlaceholder();
+                selectize_to.updatePlaceholder();
             });
 
             button.addEventListener('click', calculate)
@@ -199,6 +203,11 @@
 
         const from_name = from_name_temp[0]["values"].flat()[0];
         const to_name = to_name_temp[0]["values"].flat()[0];
+
+        const url = new URL(window.location);
+        url.searchParams.set('from', from_id);
+        url.searchParams.set('to', to_id);
+        window.history.replaceState({}, "", url);
 
         output.innerHTML = `<p class="degrees">Calculating path from <b>${from_name}</b> to <b>${to_name}</b>...</p>`;
         await new Promise(r => setTimeout(r, 50)); // so it actually renders the bloody "calculating" message
